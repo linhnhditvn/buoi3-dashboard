@@ -18,6 +18,7 @@ import {
   CreditCard,
   LayoutTemplate,
   Users,
+  UserCog,
 } from "lucide-react"
 import { User } from "firebase/auth"
 import Link from "next/link"
@@ -85,6 +86,11 @@ const data = {
           title: "Users",
           url: "/users",
           icon: Users,
+        },
+        {
+          title: "Khách hàng tư vấn",
+          url: "/customers",
+          icon: UserCog,
         },
       ],
     },

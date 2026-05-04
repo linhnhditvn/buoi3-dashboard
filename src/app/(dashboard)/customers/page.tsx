@@ -3,86 +3,99 @@
 import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { toast } from "sonner"
-import { CustomerStatCards } from "@/modules/customers/components/customer-stat-cards"
+
 import { DataTable } from "@/modules/customers/components/data-table"
-import { EditCustomerModal } from "@/modules/customers/components/edit-customer-modal"
 import { getColumns } from "@/modules/customers/components/columns"
+import { CustomerDetailSheet } from "@/modules/customers/components/customer-detail-sheet"
+import { CustomerFormSheet } from "@/modules/customers/components/customer-form-sheet"
+
 import {
-  getCustomers,
-  createCustomer,
-  updateCustomer,
-  deleteCustomer,
-} from "@/modules/customers/services/customer-services"
-import type { Customer } from "@/modules/customers/services/types/customer-types"
+  getRegisterUsers,
+  createRegisterUser,
+  updateRegisterUser,
+  deleteRegisterUser,
+} from "@/modules/customers/services/register-user-services"
+import type { RegisterUser } from "@/modules/customers/services/types/register-user-types"
 
 export default function CustomerPage() {
-  const [customers, setCustomers] = useState<Customer[]>([])
-  const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null)
+  const [users, setUsers] = useState<RegisterUser[]>([])
   const [loading, setLoading] = useState(true)
+
+  // Sheet states
+  const [detailUser, setDetailUser] = useState<RegisterUser | null>(null)
+  const [detailOpen, setDetailOpen] = useState(false)
+
+  const [formUser, setFormUser] = useState<RegisterUser | null>(null)
+  const [formOpen, setFormOpen] = useState(false)
+
   useEffect(() => {
-    const loadCustomers = async () => {
+    const loadUsers = async () => {
       try {
-        const list = await getCustomers()
-        setCustomers(list)
+        const list = await getRegisterUsers()
+        setUsers(list)
       } catch (error) {
-        console.error("Failed to load customers:", error)
+        console.error("Failed to load users:", error)
+        toast.error("Không thể tải dữ liệu khách hàng.")
       } finally {
         setLoading(false)
       }
     }
-
-    loadCustomers()
+    loadUsers()
   }, [])
 
-  const handleAddCustomer = async (newCustomer: Customer) => {
+  const handleAdd = async (newUser: RegisterUser) => {
     try {
-      await createCustomer({
-        id: newCustomer.id,
-        name: newCustomer.name,
-        email: newCustomer.email,
-        phone: newCustomer.phone,
-        status: newCustomer.status,
-        source: newCustomer.source,
-        address: newCustomer.address,
-        notes: newCustomer.notes,
-        totalSpent: newCustomer.totalSpent,
-        lastContact: newCustomer.lastContact,
-        createdAt: newCustomer.createdAt,
+      await createRegisterUser({
+        name: newUser.name,
+        email: newUser.email,
+        phone: newUser.phone,
+        message: newUser.message,
+        registeredAt: new Date().toISOString(),
       })
-      setCustomers((prev) => [newCustomer, ...prev])
-      toast.success(`Đã thêm khách hàng "${newCustomer.name}" vào Firestore.`)
+      setUsers((prev) => [newUser, ...prev])
+      setFormOpen(false)
+      toast.success(`Đã thêm khách hàng "${newUser.name}".`)
     } catch (error) {
-      console.error("Failed to create customer:", error)
+      console.error("Failed to create user:", error)
       toast.error("Không thể thêm khách hàng. Vui lòng thử lại.")
     }
   }
 
-  const handleEditCustomer = async (updatedCustomer: Customer) => {
+  const handleEdit = async (updatedUser: RegisterUser) => {
     try {
-      await updateCustomer(updatedCustomer)
-      setCustomers((prev) =>
-        prev.map((c) => (c.id === updatedCustomer.id ? updatedCustomer : c))
-      )
-      setEditingCustomer(null)
-      toast.success(`Đã cập nhật khách hàng "${updatedCustomer.name}".`)
+      await updateRegisterUser(updatedUser)
+      setUsers((prev) => prev.map((u) => (u.id === updatedUser.id ? updatedUser : u)))
+      setFormOpen(false)
+      setFormUser(null)
+      toast.success(`Đã cập nhật khách hàng "${updatedUser.name}".`)
     } catch (error) {
-      console.error("Failed to update customer:", error)
+      console.error("Failed to update user:", error)
       toast.error("Không thể cập nhật khách hàng. Vui lòng thử lại.")
     }
   }
 
-  const handleDeleteCustomer = async (customerToDelete: Customer) => {
+  const handleDelete = async (userToDelete: RegisterUser) => {
     try {
-      await deleteCustomer(customerToDelete.id)
-      setCustomers((prev) => prev.filter((c) => c.id !== customerToDelete.id))
-      toast.success(`Đã xóa khách hàng "${customerToDelete.name}" khỏi Firestore.`)
+      await deleteRegisterUser(userToDelete.id)
+      setUsers((prev) => prev.filter((u) => u.id !== userToDelete.id))
+      toast.success(`Đã xóa khách hàng "${userToDelete.name}".`)
     } catch (error) {
-      console.error("Failed to delete customer:", error)
+      console.error("Failed to delete user:", error)
       toast.error("Không thể xóa khách hàng. Vui lòng thử lại.")
     }
   }
 
-  const columns = getColumns({ onEdit: setEditingCustomer, onDelete: handleDeleteCustomer })
+  const columns = getColumns({
+    onView: (user) => {
+      setDetailUser(user)
+      setDetailOpen(true)
+    },
+    onEdit: (user) => {
+      setFormUser(user)
+      setFormOpen(true)
+    },
+    onDelete: handleDelete,
+  })
 
   if (loading) {
     return (
@@ -94,62 +107,61 @@ export default function CustomerPage() {
 
   return (
     <>
-      {/* Page Header */}
       <div className="flex flex-col gap-2 px-4 md:px-6">
-        <h1 className="text-2xl font-bold tracking-tight">Khách hàng</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Khách hàng tư vấn</h1>
         <p className="text-muted-foreground">
-          Quản lý và chăm sóc khách hàng. Theo dõi thông tin, trạng thái và doanh thu.
+          Quản lý thông tin khách hàng đăng ký tư vấn. Xem, thêm, sửa và xóa hồ sơ.
         </p>
       </div>
 
-      {/* Mobile view */}
-      <div className="md:hidden px-4 md:px-6">
-        <div className="flex items-center justify-center h-96 border rounded-lg bg-muted/20">
-          <div className="text-center p-8">
-            <h3 className="text-lg font-semibold mb-2">Quản lý khách hàng</h3>
-            <p className="text-muted-foreground">
-              Vui lòng sử dụng màn hình lớn hơn để xem đầy đủ.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Desktop view */}
-      <div className="hidden h-full flex-1 flex-col space-y-6 px-4 md:px-6 md:flex">
-        {/* Stat Cards */}
-        <CustomerStatCards customers={customers} />
-
-        {/* Data Table */}
+      <div className="px-4 md:px-6 flex-1">
         <Card>
           <CardHeader>
             <CardTitle>Danh sách khách hàng</CardTitle>
             <CardDescription>
-              Xem, lọc và quản lý tất cả khách hàng tại đây.
+              Hiển thị {users.length} khách hàng từ collection <code>register_users</code> trong Firestore.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <DataTable
-              data={customers}
+              data={users}
               columns={columns}
-              onAddCustomer={handleAddCustomer}
-              onEditCustomer={handleEditCustomer}
-              onDeleteCustomer={handleDeleteCustomer}
+              onAdd={() => {
+                setFormUser(null)
+                setFormOpen(true)
+              }}
+              onView={(user) => {
+                setDetailUser(user)
+                setDetailOpen(true)
+              }}
+              onEdit={(user) => {
+                setFormUser(user)
+                setFormOpen(true)
+              }}
+              onDelete={handleDelete}
             />
           </CardContent>
         </Card>
       </div>
 
-      {/* Edit Customer Modal */}
-      {editingCustomer && (
-        <EditCustomerModal
-          customer={editingCustomer}
-          onEditCustomer={handleEditCustomer}
-          open={true}
-          onOpenChange={(open) => {
-            if (!open) setEditingCustomer(null)
-          }}
-        />
-      )}
+      {/* Detail Sheet */}
+      <CustomerDetailSheet
+        user={detailUser}
+        open={detailOpen}
+        onOpenChange={setDetailOpen}
+      />
+
+      {/* Add/Edit Form Sheet */}
+      <CustomerFormSheet
+        user={formUser}
+        open={formOpen}
+        onOpenChange={(open) => {
+          setFormOpen(open)
+          if (!open) setFormUser(null)
+        }}
+        onAdd={handleAdd}
+        onEdit={handleEdit}
+      />
     </>
   )
 }

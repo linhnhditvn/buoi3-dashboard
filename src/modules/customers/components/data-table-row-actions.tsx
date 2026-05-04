@@ -9,27 +9,36 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
-  DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
-import { customerSchema } from "@/modules/customers/services/types/customer-types"
+import type { RegisterUser } from "@/modules/customers/services/types/register-user-types"
 
-interface DataTableRowActionsProps<TData> {
-  row: Row<TData>
-  onEdit?: (customer: TData) => void
-  onDelete?: (customer: TData) => void
+interface DataTableRowActionsProps {
+  row: Row<RegisterUser>
+  onView?: (user: RegisterUser) => void
+  onEdit?: (user: RegisterUser) => void
+  onDelete?: (user: RegisterUser) => void
 }
 
-export function DataTableRowActions<TData>({
+export function DataTableRowActions({
   row,
+  onView,
   onEdit,
   onDelete,
-}: DataTableRowActionsProps<TData>) {
-  const parsed = customerSchema.safeParse(row.original)
-  if (!parsed.success) {
-    return null
-  }
+}: DataTableRowActionsProps) {
+  const user = row.original
 
   return (
     <DropdownMenu>
@@ -39,28 +48,54 @@ export function DataTableRowActions<TData>({
           className="flex h-8 w-8 p-0 data-[state=open]:bg-muted cursor-pointer"
         >
           <MoreHorizontal />
-          <span className="sr-only">Open menu</span>
+          <span className="sr-only">Mở menu</span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-[160px]">
-        <DropdownMenuItem className="cursor-pointer">
+        <DropdownMenuItem
+          className="cursor-pointer"
+          onClick={() => onView?.(user)}
+        >
           <Eye className="mr-2 size-4" />Xem chi tiết
         </DropdownMenuItem>
         <DropdownMenuItem
           className="cursor-pointer"
-          onClick={() => onEdit?.(row.original)}
+          onClick={() => onEdit?.(user)}
         >
           <Pencil className="mr-2 size-4" />Chỉnh sửa
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem
-          className="cursor-pointer"
-          variant="destructive"
-          onClick={() => onDelete?.(row.original)}
-        >
-          <Trash2 className="mr-2 size-4" />Xóa
-          <DropdownMenuShortcut className="text-destructive">⌘⌫</DropdownMenuShortcut>
-        </DropdownMenuItem>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <div>
+              <DropdownMenuItem
+                className="cursor-pointer text-destructive focus:text-destructive"
+                onSelect={(e) => e.preventDefault()}
+              >
+                <Trash2 className="mr-2 size-4" />Xóa
+              </DropdownMenuItem>
+            </div>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Xác nhận xóa khách hàng</AlertDialogTitle>
+              <AlertDialogDescription>
+                Bạn có chắc muốn xóa khách hàng{" "}
+                <span className="font-semibold text-foreground">{user.name}</span> không?
+                Hành động này không thể hoàn tác.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel className="cursor-pointer">Hủy</AlertDialogCancel>
+              <AlertDialogAction
+                className="cursor-pointer"
+                onClick={() => onDelete?.(user)}
+              >
+                Xóa
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </DropdownMenuContent>
     </DropdownMenu>
   )
